@@ -112,7 +112,6 @@ class TitleBar(QFrame):
         layout.addLayout(title_col)
         layout.addStretch()
 
-
         self.min_btn = QToolButton()
         self.min_btn.setText("–")
         self.min_btn.setObjectName("windowButton")
@@ -386,7 +385,7 @@ class SmartPantryWindow(QMainWindow):
             QWidget {
                 font-family: 'Segoe UI', 'Inter', sans-serif;
                 font-size: 13px;
-                color: #e9f6f7;
+                color: #eef9f9;
             }
 
             QWidget#root {
@@ -396,10 +395,10 @@ class SmartPantryWindow(QMainWindow):
             QFrame#windowShell {
                 background: qlineargradient(
                     x1: 0, y1: 0, x2: 1, y2: 1,
-                    stop: 0 #07131d,
-                    stop: 0.32 #0a1f2b,
-                    stop: 0.66 #0b2934,
-                    stop: 1 #0b3b3d
+                    stop: 0 #0b1f2b,
+                    stop: 0.32 #0f2d3a,
+                    stop: 0.66 #113943,
+                    stop: 1 #144b4b
                 );
                 border: none;
                 border-radius: 0px;
@@ -408,11 +407,11 @@ class SmartPantryWindow(QMainWindow):
             QFrame#topBar, QFrame#panel, QFrame#card, QFrame#sideCard {
                 background: qlineargradient(
                     x1: 0, y1: 0, x2: 1, y2: 1,
-                    stop: 0 rgba(15, 28, 40, 0.88),
-                    stop: 1 rgba(10, 24, 34, 0.72)
+                    stop: 0 rgba(22, 48, 62, 0.85),
+                    stop: 1 rgba(16, 38, 50, 0.75)
                 );
-                border: 1px solid rgba(130, 225, 214, 0.12);
-                border-radius: 22px;
+                border: 1px solid rgba(140, 235, 220, 0.08);
+                border-radius: 20px;
             }
 
             QLabel#appTitle {
@@ -446,7 +445,7 @@ class SmartPantryWindow(QMainWindow):
             }
 
             QLabel#cardSubtitle, QLabel#mutedText {
-                color: rgba(226, 246, 247, 0.62);
+                color: rgba(230, 250, 250, 0.75);
                 line-height: 1.35em;
             }
 
@@ -465,12 +464,12 @@ class SmartPantryWindow(QMainWindow):
             QLabel#imageViewport {
                 background: qlineargradient(
                     x1: 0, y1: 0, x2: 1, y2: 1,
-                    stop: 0 rgba(14, 35, 48, 0.96),
-                    stop: 1 rgba(8, 46, 53, 0.92)
+                    stop: 0 rgba(24, 55, 70, 0.92),
+                    stop: 1 rgba(18, 65, 72, 0.9)
                 );
-                border: 1px dashed rgba(124, 228, 209, 0.26);
-                border-radius: 18px;
-                color: rgba(226, 246, 247, 0.42);
+                border: 1px dashed rgba(150, 240, 220, 0.22);
+                border-radius: 16px;
+                color: rgba(230, 250, 250, 0.55);
                 font-size: 14px;
             }
 
@@ -512,9 +511,9 @@ class SmartPantryWindow(QMainWindow):
             }
 
             QPushButton#ghostButton {
-                background: rgba(12, 31, 42, 0.88);
-                color: #dff5f5;
-                border: 1px solid rgba(120, 220, 210, 0.12);
+                background: rgba(18, 42, 55, 0.82);
+                color: #e6fbfb;
+                border: 1px solid rgba(140, 235, 220, 0.08);
             }
 
             QToolButton#windowButton, QToolButton#closeButton {
@@ -536,13 +535,13 @@ class SmartPantryWindow(QMainWindow):
             }
 
             QTextEdit, QListWidget, QTableWidget {
-                background: rgba(8, 18, 27, 0.84);
-                border: 1px solid rgba(120, 220, 210, 0.1);
+                background: rgba(16, 36, 48, 0.78);
+                border: 1px solid rgba(140, 235, 220, 0.08);
                 border-radius: 16px;
-                color: #eafcfc;
+                color: #eefcfc;
                 padding: 8px;
-                selection-background-color: rgba(20, 180, 155, 0.34);
-                gridline-color: rgba(120, 220, 210, 0.08);
+                selection-background-color: rgba(40, 200, 170, 0.25);
+                gridline-color: rgba(140, 235, 220, 0.06);
             }
 
             QListWidget::item {
@@ -565,8 +564,8 @@ class SmartPantryWindow(QMainWindow):
             }
 
             QProgressBar {
-                background: rgba(7, 16, 23, 0.86);
-                border: 1px solid rgba(120, 220, 210, 0.12);
+                background: rgba(14, 30, 40, 0.75);
+                border: 1px solid rgba(140, 235, 220, 0.08);
                 border-radius: 10px;
                 height: 22px;
                 text-align: center;
