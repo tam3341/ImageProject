@@ -112,9 +112,6 @@ class TitleBar(QFrame):
         layout.addLayout(title_col)
         layout.addStretch()
 
-        self.project_badge = QLabel("Desktop Pipeline Demo")
-        self.project_badge.setObjectName("pill")
-        layout.addWidget(self.project_badge)
 
         self.min_btn = QToolButton()
         self.min_btn.setText("–")
