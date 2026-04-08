@@ -1,8 +1,13 @@
 import sys
 from pathlib import Path
 
+import cv2
 from PySide6.QtCore import Qt, QSize, QPoint
-from PySide6.QtGui import QAction, QColor, QPixmap
+from PySide6.QtGui import QAction, QColor, QPixmap, QImage
+from imageProcessor import imageProcessor
+from ui_components import ImageStageCard, InfoCard, TitleBar
+from styles import MODERN_STYLE
+
 from PySide6.QtWidgets import (
     QApplication,
     QFileDialog,
@@ -25,141 +30,6 @@ from PySide6.QtWidgets import (
     QVBoxLayout,
     QWidget,
 )
-
-
-class ImageStageCard(QFrame):
-    def __init__(self, title: str, subtitle: str):
-        super().__init__()
-        self.setObjectName("card")
-        self.setMinimumHeight(260)
-
-        layout = QVBoxLayout(self)
-        layout.setContentsMargins(18, 18, 18, 18)
-        layout.setSpacing(12)
-
-        header_layout = QVBoxLayout()
-        title_label = QLabel(title)
-        title_label.setObjectName("cardTitle")
-        subtitle_label = QLabel(subtitle)
-        subtitle_label.setObjectName("cardSubtitle")
-        subtitle_label.setWordWrap(True)
-
-        header_layout.addWidget(title_label)
-        header_layout.addWidget(subtitle_label)
-        layout.addLayout(header_layout)
-
-        self.image_label = QLabel("Preview will appear here")
-        self.image_label.setObjectName("imageViewport")
-        self.image_label.setAlignment(Qt.AlignCenter)
-        self.image_label.setMinimumHeight(180)
-        layout.addWidget(self.image_label)
-
-    def set_pixmap(self, pixmap: QPixmap):
-        if pixmap.isNull():
-            return
-        scaled = pixmap.scaled(
-            self.image_label.size() - QSize(12, 12),
-            Qt.KeepAspectRatio,
-            Qt.SmoothTransformation,
-        )
-        self.image_label.setPixmap(scaled)
-
-    def resizeEvent(self, event):
-        super().resizeEvent(event)
-        current = self.image_label.pixmap()
-        if current and not current.isNull():
-            self.set_pixmap(current)
-
-
-class InfoCard(QFrame):
-    def __init__(self, title: str):
-        super().__init__()
-        self.setObjectName("sideCard")
-        layout = QVBoxLayout(self)
-        layout.setContentsMargins(16, 16, 16, 16)
-        layout.setSpacing(10)
-
-        title_label = QLabel(title)
-        title_label.setObjectName("sectionTitle")
-        layout.addWidget(title_label)
-
-        self.body_layout = layout
-
-
-class TitleBar(QFrame):
-    def __init__(self, parent_window):
-        super().__init__()
-        self.parent_window = parent_window
-        self.drag_pos = None
-        self.setObjectName("topBar")
-
-        layout = QHBoxLayout(self)
-        layout.setContentsMargins(20, 14, 16, 14)
-        layout.setSpacing(14)
-
-        title_col = QVBoxLayout()
-        title_col.setSpacing(2)
-
-        app_title = QLabel("Smart Pantry Assistant")
-        app_title.setObjectName("appTitle")
-        app_subtitle = QLabel(
-            "Interactive image-processing pipeline for food detection and recipe recommendation"
-        )
-        app_subtitle.setObjectName("appSubtitle")
-        title_col.addWidget(app_title)
-        title_col.addWidget(app_subtitle)
-
-        layout.addLayout(title_col)
-        layout.addStretch()
-
-        self.min_btn = QToolButton()
-        self.min_btn.setText("–")
-        self.min_btn.setObjectName("windowButton")
-        self.min_btn.clicked.connect(self.parent_window.showMinimized)
-
-        self.max_btn = QToolButton()
-        self.max_btn.setText("□")
-        self.max_btn.setObjectName("windowButton")
-        self.max_btn.clicked.connect(self.toggle_max_restore)
-
-        self.close_btn = QToolButton()
-        self.close_btn.setText("✕")
-        self.close_btn.setObjectName("closeButton")
-        self.close_btn.clicked.connect(self.parent_window.close)
-
-        layout.addWidget(self.min_btn)
-        layout.addWidget(self.max_btn)
-        layout.addWidget(self.close_btn)
-
-    def toggle_max_restore(self):
-        if self.parent_window.isMaximized():
-            self.parent_window.showNormal()
-            self.max_btn.setText("□")
-        else:
-            self.parent_window.showMaximized()
-            self.max_btn.setText("❐")
-
-    def mousePressEvent(self, event):
-        if event.button() == Qt.LeftButton:
-            self.drag_pos = event.globalPosition().toPoint()
-            event.accept()
-
-    def mouseMoveEvent(self, event):
-        if self.drag_pos is not None and not self.parent_window.isMaximized():
-            delta = event.globalPosition().toPoint() - self.drag_pos
-            self.parent_window.move(self.parent_window.pos() + delta)
-            self.drag_pos = event.globalPosition().toPoint()
-            event.accept()
-
-    def mouseReleaseEvent(self, event):
-        self.drag_pos = None
-        event.accept()
-
-    def mouseDoubleClickEvent(self, event):
-        if event.button() == Qt.LeftButton:
-            self.toggle_max_restore()
-            event.accept()
-
 
 class SmartPantryWindow(QMainWindow):
     def __init__(self):
@@ -236,8 +106,10 @@ class SmartPantryWindow(QMainWindow):
 
         self.run_input_btn = QPushButton("Run Input Check")
         self.run_processing_btn = QPushButton("Run Preprocessing")
+        self.run_processing_btn.clicked.connect(self.run_processing)
         self.run_detection_btn = QPushButton("Run Detection")
         self.run_full_btn = QPushButton("Run Full Pipeline")
+        self.run_full_btn.clicked.connect(self.run_full_pipeline)
         self.reset_btn = QPushButton("Reset")
 
         self.run_full_btn.setObjectName("primaryButton")
@@ -380,229 +252,9 @@ class SmartPantryWindow(QMainWindow):
         return container
 
     def _apply_styles(self):
-        self.setStyleSheet(
-            """
-            QWidget {
-                font-family: 'Segoe UI', 'Inter', sans-serif;
-                font-size: 13px;
-                color: #eef9f9;
-            }
-
-            QWidget#root {
-                background: transparent;
-            }
-
-            QFrame#windowShell {
-                background: qlineargradient(
-                    x1: 0, y1: 0, x2: 1, y2: 1,
-                    stop: 0 #0b1f2b,
-                    stop: 0.32 #0f2d3a,
-                    stop: 0.66 #113943,
-                    stop: 1 #144b4b
-                );
-                border: none;
-                border-radius: 0px;
-            }
-
-            QFrame#topBar, QFrame#panel, QFrame#card, QFrame#sideCard {
-                background: qlineargradient(
-                    x1: 0, y1: 0, x2: 1, y2: 1,
-                    stop: 0 rgba(22, 48, 62, 0.85),
-                    stop: 1 rgba(16, 38, 50, 0.75)
-                );
-                border: 1px solid rgba(140, 235, 220, 0.08);
-                border-radius: 20px;
-            }
-
-            QLabel#appTitle {
-                font-size: 24px;
-                font-weight: 700;
-                color: #f5ffff;
-                letter-spacing: 0.2px;
-            }
-
-            QLabel#appSubtitle {
-                color: rgba(226, 246, 247, 0.68);
-                font-size: 12px;
-            }
-
-            QLabel#panelTitle {
-                font-size: 18px;
-                font-weight: 650;
-                color: #f3ffff;
-            }
-
-            QLabel#sectionTitle {
-                font-size: 15px;
-                font-weight: 650;
-                color: #dffbfb;
-            }
-
-            QLabel#cardTitle {
-                font-size: 16px;
-                font-weight: 650;
-                color: #f3ffff;
-            }
-
-            QLabel#cardSubtitle, QLabel#mutedText {
-                color: rgba(230, 250, 250, 0.75);
-                line-height: 1.35em;
-            }
-
-            QLabel#pill {
-                background: qlineargradient(
-                    x1: 0, y1: 0, x2: 1, y2: 0,
-                    stop: 0 #18a8ff,
-                    stop: 1 #22d59a
-                );
-                color: white;
-                padding: 8px 14px;
-                border-radius: 14px;
-                font-weight: 700;
-            }
-
-            QLabel#imageViewport {
-                background: qlineargradient(
-                    x1: 0, y1: 0, x2: 1, y2: 1,
-                    stop: 0 rgba(24, 55, 70, 0.92),
-                    stop: 1 rgba(18, 65, 72, 0.9)
-                );
-                border: 1px dashed rgba(150, 240, 220, 0.22);
-                border-radius: 16px;
-                color: rgba(230, 250, 250, 0.55);
-                font-size: 14px;
-            }
-
-            QPushButton, QToolButton {
-                border: none;
-                border-radius: 14px;
-                padding: 11px 16px;
-                font-size: 13px;
-                font-weight: 600;
-            }
-
-            QPushButton#primaryButton {
-                background: qlineargradient(
-                    x1: 0, y1: 0, x2: 1, y2: 0,
-                    stop: 0 #0ea5ff,
-                    stop: 1 #18cc90
-                );
-                color: white;
-            }
-
-            QPushButton#primaryButton:hover {
-                background: qlineargradient(
-                    x1: 0, y1: 0, x2: 1, y2: 0,
-                    stop: 0 #2ab6ff,
-                    stop: 1 #36dba1
-                );
-            }
-
-            QPushButton#secondaryButton {
-                background: rgba(18, 45, 61, 0.92);
-                color: #efffff;
-                border: 1px solid rgba(100, 206, 232, 0.26);
-            }
-
-            QPushButton#secondaryButton:hover,
-            QPushButton#ghostButton:hover,
-            QToolButton#windowButton:hover {
-                background: rgba(29, 67, 84, 0.92);
-            }
-
-            QPushButton#ghostButton {
-                background: rgba(18, 42, 55, 0.82);
-                color: #e6fbfb;
-                border: 1px solid rgba(140, 235, 220, 0.08);
-            }
-
-            QToolButton#windowButton, QToolButton#closeButton {
-                min-width: 34px;
-                max-width: 34px;
-                min-height: 34px;
-                max-height: 34px;
-                padding: 0;
-                border-radius: 17px;
-                background: rgba(18, 39, 51, 0.88);
-                color: #e9f6f7;
-                font-size: 14px;
-                font-weight: 700;
-            }
-
-            QToolButton#closeButton:hover {
-                background: rgba(220, 68, 88, 0.95);
-                color: white;
-            }
-
-            QTextEdit, QListWidget, QTableWidget {
-                background: rgba(16, 36, 48, 0.78);
-                border: 1px solid rgba(140, 235, 220, 0.08);
-                border-radius: 16px;
-                color: #eefcfc;
-                padding: 8px;
-                selection-background-color: rgba(40, 200, 170, 0.25);
-                gridline-color: rgba(140, 235, 220, 0.06);
-            }
-
-            QListWidget::item {
-                padding: 8px 10px;
-                margin: 2px 0;
-                border-radius: 10px;
-            }
-
-            QListWidget::item:selected {
-                background: rgba(26, 160, 183, 0.28);
-                color: #f5ffff;
-            }
-
-            QHeaderView::section {
-                background: rgba(15, 40, 52, 0.92);
-                color: #dbffff;
-                border: none;
-                padding: 8px;
-                font-weight: 600;
-            }
-
-            QProgressBar {
-                background: rgba(14, 30, 40, 0.75);
-                border: 1px solid rgba(140, 235, 220, 0.08);
-                border-radius: 10px;
-                height: 22px;
-                text-align: center;
-                color: white;
-                font-weight: 700;
-            }
-
-            QProgressBar::chunk {
-                border-radius: 9px;
-                background: qlineargradient(
-                    x1: 0, y1: 0, x2: 1, y2: 0,
-                    stop: 0 #10a9ff,
-                    stop: 1 #20d596
-                );
-            }
-
-            QSplitter::handle {
-                background: transparent;
-            }
-
-            QStatusBar {
-                background: rgba(8, 19, 28, 0.82);
-                color: rgba(233, 246, 247, 0.78);
-                border-top: 1px solid rgba(120, 220, 210, 0.08);
-                border-radius: 12px;
-            }
-            """
-        )
+        self.setStyleSheet(MODERN_STYLE)
 
     def _apply_window_effects(self):
-        # Removed outer window shadow to eliminate glowing outline
-        # shell_shadow = QGraphicsDropShadowEffect(self)
-        # shell_shadow.setBlurRadius(42)
-        # shell_shadow.setOffset(0, 12)
-        # shell_shadow.setColor(QColor(0, 0, 0, 120))
-        # self.window_shell.setGraphicsEffect(shell_shadow)
-
         for card in [
             self.original_card,
             self.processed_card,
@@ -676,8 +328,7 @@ class SmartPantryWindow(QMainWindow):
         self.current_image_path = file_path
         self.original_pixmap = pixmap
 
-        for card in [self.original_card, self.processed_card, self.analysis_card, self.output_card]:
-            card.set_pixmap(pixmap)
+        self.original_card.set_pixmap(pixmap)
 
         image_path = Path(file_path)
         self.input_log.setPlainText(
@@ -701,6 +352,48 @@ class SmartPantryWindow(QMainWindow):
         self.progress.setValue(18)
         self.stage_list.setCurrentRow(1)
         self.statusBar().showMessage(f"Loaded image: {image_path.name}")
+
+    def cv2_to_qpixmap(self, cv_img):
+        height, width, channel = cv_img.shape
+        bytes_per_line = 3 * width
+        rgb_img = cv2.cvtColor(cv_img, cv2.COLOR_BGR2RGB)
+        q_img = QImage(rgb_img.data, width, height, bytes_per_line, QImage.Format_RGB888)
+        return QPixmap.fromImage(q_img)
+
+    def run_processing(self):
+        if not self.current_image_path:
+            self.statusBar().showMessage("Please open an image first.")
+            return
+
+        img = cv2.imread(self.current_image_path)
+        if img is None:
+            self.statusBar().showMessage("Failed to load image for processing.")
+            return
+
+        blur = imageProcessor.apply_gaussian_blur(img)
+        enhanced_bgr = imageProcessor.apply_clahe(blur)
+        final_img = imageProcessor.apply_unsharp_masking(enhanced_bgr)
+
+        final_pixmap = self.cv2_to_qpixmap(final_img)
+        self.processed_card.set_pixmap(final_pixmap)
+        self.analysis_card.set_pixmap(final_pixmap)
+        self.output_card.set_pixmap(final_pixmap)
+
+        self.processing_log.setPlainText(
+            "Preprocessing complete.\n"
+            "- Applied Gaussian Blur\n"
+            "- Applied CLAHE (Local Contrast)\n"
+            "- Applied Unsharp Masking (Edge Enhancement)"
+        )
+        self.progress.setValue(50)
+        self.stage_list.setCurrentRow(2)
+        self.statusBar().showMessage("Preprocessing complete.")
+
+    def run_full_pipeline(self):
+        self.run_processing()
+        self.progress.setValue(100)
+        self.stage_list.setCurrentRow(5)
+        self.statusBar().showMessage("Full pipeline simulated.")
 
 
 if __name__ == "__main__":
