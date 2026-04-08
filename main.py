@@ -5,6 +5,7 @@ import cv2
 from PySide6.QtCore import Qt, QSize, QPoint
 from PySide6.QtGui import QAction, QColor, QPixmap, QImage
 from imageProcessor import imageProcessor
+from recipes import MealDBAPI
 from ui_components import ImageStageCard, InfoCard, TitleBar
 from styles import MODERN_STYLE
 
@@ -36,6 +37,8 @@ class SmartPantryWindow(QMainWindow):
         super().__init__()
         self.current_image_path = None
         self.original_pixmap = QPixmap()
+        self.processed_img_cv = None
+        self.detected_items = []
 
         self.setWindowFlags(Qt.FramelessWindowHint)
         self.setAttribute(Qt.WA_TranslucentBackground, False)
@@ -108,6 +111,7 @@ class SmartPantryWindow(QMainWindow):
         self.run_processing_btn = QPushButton("Run Preprocessing")
         self.run_processing_btn.clicked.connect(self.run_processing)
         self.run_detection_btn = QPushButton("Run Detection")
+        self.run_detection_btn.clicked.connect(self.run_detection)
         self.run_full_btn = QPushButton("Run Full Pipeline")
         self.run_full_btn.clicked.connect(self.run_full_pipeline)
         self.reset_btn = QPushButton("Reset")
@@ -290,25 +294,8 @@ class SmartPantryWindow(QMainWindow):
             "- any intermediate notes"
         )
 
-        sample_items = [
-            ("egg", "0.94", "4"),
-            ("milk", "0.89", "1"),
-            ("tomato", "0.91", "3"),
-        ]
-        self.features_table.setRowCount(len(sample_items))
-        for row, values in enumerate(sample_items):
-            for col, value in enumerate(values):
-                self.features_table.setItem(row, col, QTableWidgetItem(value))
-
-        sample_recipes = [
-            ("Omelette", "100", "-") ,
-            ("Tomato Egg Skillet", "100", "-") ,
-            ("Creamy Pasta", "67", "pasta") ,
-        ]
-        self.recipe_table.setRowCount(len(sample_recipes))
-        for row, values in enumerate(sample_recipes):
-            for col, value in enumerate(values):
-                self.recipe_table.setItem(row, col, QTableWidgetItem(value))
+        self.features_table.setRowCount(0)
+        self.recipe_table.setRowCount(0)
 
     def open_image(self):
         file_path, _ = QFileDialog.getOpenFileName(
@@ -373,11 +360,10 @@ class SmartPantryWindow(QMainWindow):
         blur = imageProcessor.apply_gaussian_blur(img)
         enhanced_bgr = imageProcessor.apply_clahe(blur)
         final_img = imageProcessor.apply_unsharp_masking(enhanced_bgr)
+        self.processed_img_cv = final_img
 
         final_pixmap = self.cv2_to_qpixmap(final_img)
         self.processed_card.set_pixmap(final_pixmap)
-        self.analysis_card.set_pixmap(final_pixmap)
-        self.output_card.set_pixmap(final_pixmap)
 
         self.processing_log.setPlainText(
             "Preprocessing complete.\n"
@@ -385,15 +371,62 @@ class SmartPantryWindow(QMainWindow):
             "- Applied CLAHE (Local Contrast)\n"
             "- Applied Unsharp Masking (Edge Enhancement)"
         )
-        self.progress.setValue(50)
+        self.progress.setValue(33)
         self.stage_list.setCurrentRow(2)
         self.statusBar().showMessage("Preprocessing complete.")
 
+    def run_detection(self):
+        if self.processed_img_cv is None:
+            self.statusBar().showMessage("Please run preprocessing first.")
+            return
+
+        plotted_img, items = imageProcessor.detect_ingrediants(self.processed_img_cv, 'best.pt')
+        
+        final_pixmap = self.cv2_to_qpixmap(plotted_img)
+        self.analysis_card.set_pixmap(final_pixmap)
+        self.output_card.set_pixmap(final_pixmap)
+
+        # Aggregate items
+        item_counts = {}
+        item_confidences = {}
+        for item in items:
+            name = item['name']
+            item_counts[name] = item_counts.get(name, 0) + 1
+            if name not in item_confidences or item['confidence'] > item_confidences[name]:
+                item_confidences[name] = item['confidence']
+
+        self.detected_items = list(item_counts.keys())
+        self.features_table.setRowCount(len(self.detected_items))
+        for row, name in enumerate(self.detected_items):
+            self.features_table.setItem(row, 0, QTableWidgetItem(name))
+            self.features_table.setItem(row, 1, QTableWidgetItem(f"{item_confidences[name]:.2f}"))
+            self.features_table.setItem(row, 2, QTableWidgetItem(str(item_counts[name])))
+
+        self.progress.setValue(66)
+        self.stage_list.setCurrentRow(3)
+        self.statusBar().showMessage("Detection complete.")
+
+    def run_recommendations(self):
+        if not self.detected_items:
+            self.statusBar().showMessage("No ingredients detected for recommendations.")
+            return
+            
+        recipes = MealDBAPI.search_by_multiple_ingredients(self.detected_items)
+        self.recipe_table.setRowCount(len(recipes))
+        for row, r in enumerate(recipes):
+            self.recipe_table.setItem(row, 0, QTableWidgetItem(r['name']))
+            self.recipe_table.setItem(row, 1, QTableWidgetItem(f"{r['match_percentage']}%"))
+            self.recipe_table.setItem(row, 2, QTableWidgetItem(', '.join(r['missing_ingredients'])))
+
+        self.progress.setValue(100)
+        self.stage_list.setCurrentRow(4)
+        self.statusBar().showMessage("Recommendations fetched.")
+
     def run_full_pipeline(self):
         self.run_processing()
-        self.progress.setValue(100)
-        self.stage_list.setCurrentRow(5)
-        self.statusBar().showMessage("Full pipeline simulated.")
+        if self.processed_img_cv is not None:
+            self.run_detection()
+            self.run_recommendations()
 
 
 if __name__ == "__main__":

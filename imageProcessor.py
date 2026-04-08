@@ -1,4 +1,5 @@
 import cv2
+from ultralytics import YOLO
 
 class imageProcessor:
     @staticmethod
@@ -34,6 +35,22 @@ class imageProcessor:
         gaussian_blur_2 = cv2.GaussianBlur(img, kernel_size, sigmaX)
         return cv2.addWeighted(img, 1 + k, gaussian_blur_2, -k, 0)
 
+    @staticmethod
+    def detect_ingrediants(img, model_weights='best.pt'):
+        inference_model = YOLO(model_weights)
+        results = inference_model.predict(img, conf=0.25)[0]
+        
+        plotted_img = results.plot()
+        
+        detected_items = []
+        for box in results.boxes:
+            class_id = int(box.cls[0].item())
+            class_name = results.names[class_id]
+            confidence = float(box.conf[0].item())
+            detected_items.append({"name": class_name, "confidence": confidence})
+            
+        return plotted_img, detected_items
+        
     @staticmethod
     def enhance_image_pipeline(img_path, save_path=None):
         """
