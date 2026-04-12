@@ -27,7 +27,7 @@ class ImageStageCard(QFrame):
     def __init__(self, title: str, subtitle: str):
         super().__init__()
         self.setObjectName("card")
-        self.setMinimumHeight(260)
+        self.setMinimumHeight(340)
 
         layout = QVBoxLayout(self)
         layout.setContentsMargins(18, 18, 18, 18)
@@ -47,7 +47,7 @@ class ImageStageCard(QFrame):
         self.image_label = QLabel("Preview will appear here")
         self.image_label.setObjectName("imageViewport")
         self.image_label.setAlignment(Qt.AlignCenter)
-        self.image_label.setMinimumHeight(180)
+        self.image_label.setMinimumHeight(255)
         layout.addWidget(self.image_label)
 
     def set_pixmap(self, pixmap: QPixmap):

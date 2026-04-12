@@ -83,7 +83,7 @@ class SmartPantryWindow(QMainWindow):
         splitter.addWidget(self._build_left_sidebar())
         splitter.addWidget(self._build_pipeline_area())
         splitter.addWidget(self._build_right_panel())
-        splitter.setSizes([280, 920, 360])
+        splitter.setSizes([240,1120, 300])
         root_layout.addWidget(splitter)
 
         self.setStatusBar(QStatusBar())
@@ -156,15 +156,6 @@ class SmartPantryWindow(QMainWindow):
         progress_card.body_layout.addWidget(self.stage_list)
         layout.addWidget(progress_card)
 
-        tips_card = InfoCard("Presentation Tip")
-        tip_label = QLabel(
-            "Do not hide the pipeline. Each layer should show what it receives, what it does, and what it returns."
-        )
-        tip_label.setWordWrap(True)
-        tip_label.setObjectName("mutedText")
-        tips_card.body_layout.addWidget(tip_label)
-        layout.addWidget(tips_card)
-
         layout.addStretch()
         return container
 
@@ -189,21 +180,29 @@ class SmartPantryWindow(QMainWindow):
         grid.setHorizontalSpacing(16)
         grid.setVerticalSpacing(16)
 
+        grid.setColumnStretch(0, 1)
+        grid.setColumnStretch(1, 1)
+        grid.setRowStretch(0, 1)
+        grid.setRowStretch(1, 1) 
+
         self.original_card = ImageStageCard(
-            "Input Layer",
-            "Original uploaded image and basic validation preview.",
+           "Input Layer",
+           "Uploaded image and validation preview.",
         )
+
         self.processed_card = ImageStageCard(
-            "Image Processing Layer",
-            "Enhanced / resized / filtered image output.",
+           "Image Processing Layer",
+           "Enhanced image used for detection.",
         )
+       
         self.analysis_card = ImageStageCard(
-            "Feature / Analysis Layer",
-            "Detections, extracted ingredients, and useful representations.",
+           "Feature / Analysis Layer",
+           "Detected items and extracted ingredients.",
         )
+       
         self.output_card = ImageStageCard(
-            "Output Layer",
-            "Final visual result with decision-ready output.",
+           "Output Layer",
+           "Final detection and recommendation result.",
         )
 
         grid.addWidget(self.original_card, 0, 0)
@@ -270,9 +269,9 @@ class SmartPantryWindow(QMainWindow):
             self.decision_card,
         ]:
             shadow = QGraphicsDropShadowEffect(self)
-            shadow.setBlurRadius(26)
-            shadow.setOffset(0, 8)
-            shadow.setColor(QColor(0, 0, 0, 70))
+            shadow.setBlurRadius(16)
+            shadow.setOffset(0, 4)
+            shadow.setColor(QColor(0, 0, 0, 45))
             card.setGraphicsEffect(shadow)
 
     def _add_demo_data(self):

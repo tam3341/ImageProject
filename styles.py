@@ -27,7 +27,7 @@ QFrame#topBar, QFrame#panel, QFrame#card, QFrame#sideCard {
         stop: 0 rgba(22, 48, 62, 0.85),
         stop: 1 rgba(16, 38, 50, 0.75)
     );
-    border: 1px solid rgba(140, 235, 220, 0.08);
+    border: 1px solid rgba(140, 235, 220, 0.05);
     border-radius: 20px;
 }
 
@@ -81,12 +81,12 @@ QLabel#pill {
 QLabel#imageViewport {
     background: qlineargradient(
         x1: 0, y1: 0, x2: 1, y2: 1,
-        stop: 0 rgba(24, 55, 70, 0.92),
-        stop: 1 rgba(18, 65, 72, 0.9)
+        stop: 0 rgba(28, 60, 72, 0.88),
+        stop: 1 rgba(24, 68, 74, 0.86)
     );
-    border: 1px dashed rgba(150, 240, 220, 0.22);
-    border-radius: 16px;
-    color: rgba(230, 250, 250, 0.55);
+    border: 1px solid rgba(150, 240, 220, 0.08);
+    border-radius: 18px;
+    color: rgba(230, 250, 250, 0.50);
     font-size: 14px;
 }
 

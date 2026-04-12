@@ -3,7 +3,7 @@ from ultralytics import YOLO
 
 class imageProcessor:
     @staticmethod
-    def apply_gaussian_blur(img, kernel_size=(5, 5), sigmaX=1.0):
+    def apply_gaussian_blur(img, kernel_size=(3, 3), sigmaX=0.8):
         """
         1. Denoising: Gaussian Blur (Lecture 4)
         Optimal for Gaussian noise; preserves edges better than mean filter
@@ -26,7 +26,7 @@ class imageProcessor:
         return cv2.cvtColor(enhanced, cv2.COLOR_LAB2BGR)
 
     @staticmethod
-    def apply_unsharp_masking(img, kernel_size=(9, 9), sigmaX=10.0, k=1.5):
+    def apply_unsharp_masking(img, kernel_size=(5, 5), sigmaX=3.0, k=0.8):
         """
         3. Edge Enhancement: Unsharp Masking (Lecture 4)
         Amplifies high-frequency details with tunable strength
