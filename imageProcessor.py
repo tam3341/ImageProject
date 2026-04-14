@@ -3,7 +3,7 @@ from ultralytics import YOLO
 
 class imageProcessor:
     @staticmethod
-    def apply_gaussian_blur(img, kernel_size=(3, 3), sigmaX=0.8):
+    def apply_gaussian_blur(img, kernel_size=(3, 3), sigmaX=0.4):
         """
         1. Denoising: Gaussian Blur (Lecture 4)
         Optimal for Gaussian noise; preserves edges better than mean filter
@@ -12,7 +12,7 @@ class imageProcessor:
         return cv2.GaussianBlur(img, kernel_size, sigmaX)
 
     @staticmethod
-    def apply_clahe(img, clip_limit=2.0, tile_grid_size=(8, 8)):
+    def apply_clahe(img, clip_limit=1.2, tile_grid_size=(8, 8)):
         """
         2. Local Contrast: CLAHE (Lecture 3)
         Preserves local contrast while preventing over-enhancement in fridge lighting
@@ -26,7 +26,7 @@ class imageProcessor:
         return cv2.cvtColor(enhanced, cv2.COLOR_LAB2BGR)
 
     @staticmethod
-    def apply_unsharp_masking(img, kernel_size=(5, 5), sigmaX=3.0, k=0.8):
+    def apply_unsharp_masking(img, kernel_size=(5, 5), sigmaX=2.0, k=0.5):
         """
         3. Edge Enhancement: Unsharp Masking (Lecture 4)
         Amplifies high-frequency details with tunable strength
