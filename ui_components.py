@@ -261,3 +261,225 @@ class ClickableImageLabel(QLabel):
             dialog = ZoomImageDialog(self.full_pixmap, self.dialog_title, self)
             dialog.exec()
         super().mousePressEvent(event)
+
+
+class ZoomTableDialog(QDialog):
+    """Full-screen zoomable dialog for viewing table data."""
+
+    DIALOG_STYLE = """
+        QDialog {
+            background: #0b1f2b;
+        }
+        QTableWidget {
+            background: rgba(12, 30, 42, 0.95);
+            alternate-background-color: rgba(20, 45, 60, 0.90);
+            border: 1px solid rgba(140, 235, 220, 0.15);
+            border-radius: 14px;
+            color: #eefcfc;
+            padding: 4px;
+            selection-background-color: rgba(40, 200, 170, 0.30);
+            gridline-color: rgba(140, 235, 220, 0.12);
+            outline: 0;
+        }
+        QTableWidget::item {
+            padding: 8px 14px;
+            border-bottom: 1px solid rgba(140, 235, 220, 0.08);
+        }
+        QTableWidget::item:selected {
+            background: rgba(26, 160, 183, 0.30);
+            color: #ffffff;
+        }
+        QTableWidget::item:hover {
+            background: rgba(40, 120, 150, 0.22);
+        }
+        QHeaderView {
+            background: transparent;
+        }
+        QHeaderView::section {
+            background: rgba(10, 32, 46, 0.96);
+            color: #8cecdc;
+            border: none;
+            border-bottom: 2px solid rgba(140, 235, 220, 0.22);
+            border-right: 1px solid rgba(140, 235, 220, 0.06);
+            padding: 12px 16px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        QHeaderView::section:last {
+            border-right: none;
+        }
+        QLabel {
+            color: #eefcfc;
+            font-family: 'Segoe UI', 'Inter', sans-serif;
+        }
+        QLabel#dialogTitle {
+            font-size: 20px;
+            font-weight: 700;
+            color: #f3ffff;
+        }
+        QLabel#zoomLabel {
+            font-size: 13px;
+            color: rgba(230, 250, 250, 0.75);
+        }
+        QPushButton {
+            border: none;
+            border-radius: 12px;
+            padding: 10px 18px;
+            font-size: 13px;
+            font-weight: 600;
+            font-family: 'Segoe UI', 'Inter', sans-serif;
+            color: #efffff;
+            background: rgba(18, 42, 55, 0.82);
+            border: 1px solid rgba(140, 235, 220, 0.08);
+        }
+        QPushButton:hover {
+            background: rgba(29, 67, 84, 0.92);
+        }
+        QPushButton#closeBtn {
+            background: qlineargradient(
+                x1: 0, y1: 0, x2: 1, y2: 0,
+                stop: 0 #0ea5ff,
+                stop: 1 #18cc90
+            );
+            color: white;
+        }
+        QPushButton#closeBtn:hover {
+            background: qlineargradient(
+                x1: 0, y1: 0, x2: 1, y2: 0,
+                stop: 0 #2ab6ff,
+                stop: 1 #36dba1
+            );
+        }
+        QScrollBar:vertical {
+            background: rgba(14, 30, 40, 0.5);
+            width: 8px;
+            border-radius: 4px;
+            margin: 2px;
+        }
+        QScrollBar::handle:vertical {
+            background: rgba(140, 235, 220, 0.18);
+            border-radius: 4px;
+            min-height: 28px;
+        }
+        QScrollBar::handle:vertical:hover {
+            background: rgba(140, 235, 220, 0.32);
+        }
+        QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {
+            height: 0px;
+        }
+    """
+
+    def __init__(self, source_table: QTableWidget, dialog_title: str = "Table View", parent=None):
+        super().__init__(parent)
+        self.setWindowTitle(dialog_title)
+        self.resize(900, 650)
+        self.base_font_size = 14
+        self.current_font_size = self.base_font_size
+        self.setStyleSheet(self.DIALOG_STYLE)
+
+        layout = QVBoxLayout(self)
+        layout.setContentsMargins(20, 20, 20, 20)
+        layout.setSpacing(14)
+
+        # Header row
+        header_row = QHBoxLayout()
+        title_label = QLabel(dialog_title)
+        title_label.setObjectName("dialogTitle")
+        header_row.addWidget(title_label)
+        header_row.addStretch()
+
+        self.zoom_label = QLabel(f"{self.current_font_size}px")
+        self.zoom_label.setObjectName("zoomLabel")
+
+        zoom_out_btn = QPushButton("A−")
+        zoom_out_btn.setFixedSize(40, 40)
+        zoom_out_btn.clicked.connect(self.zoom_out)
+
+        zoom_in_btn = QPushButton("A+")
+        zoom_in_btn.setFixedSize(40, 40)
+        zoom_in_btn.clicked.connect(self.zoom_in)
+
+        reset_btn = QPushButton("Reset")
+        reset_btn.clicked.connect(self.reset_zoom)
+
+        header_row.addWidget(zoom_out_btn)
+        header_row.addWidget(self.zoom_label)
+        header_row.addWidget(zoom_in_btn)
+        header_row.addWidget(reset_btn)
+        layout.addLayout(header_row)
+
+        # Build the zoomed table
+        col_count = source_table.columnCount()
+        row_count = source_table.rowCount()
+
+        self.table = QTableWidget(row_count, col_count)
+        headers = []
+        for c in range(col_count):
+            header_item = source_table.horizontalHeaderItem(c)
+            headers.append(header_item.text() if header_item else f"Col {c + 1}")
+        self.table.setHorizontalHeaderLabels(headers)
+
+        for r in range(row_count):
+            for c in range(col_count):
+                src_item = source_table.item(r, c)
+                text = src_item.text() if src_item else ""
+                self.table.setItem(r, c, QTableWidgetItem(text))
+
+        self.table.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
+        self.table.horizontalHeader().setMinimumHeight(44)
+        self.table.verticalHeader().setVisible(False)
+        self.table.setAlternatingRowColors(True)
+        self.table.setShowGrid(True)
+        self.table.setEditTriggers(QTableWidget.NoEditTriggers)
+        self.table.setSelectionBehavior(QTableWidget.SelectRows)
+        self.table.verticalHeader().setDefaultSectionSize(42)
+        layout.addWidget(self.table)
+
+        # Bottom buttons
+        bottom_row = QHBoxLayout()
+        bottom_row.addStretch()
+        close_btn = QPushButton("Close")
+        close_btn.setObjectName("closeBtn")
+        close_btn.clicked.connect(self.accept)
+        bottom_row.addWidget(close_btn)
+        layout.addLayout(bottom_row)
+
+        self._apply_font_size()
+
+    def _apply_font_size(self):
+        font = self.table.font()
+        font.setPixelSize(self.current_font_size)
+        self.table.setFont(font)
+
+        header_font = self.table.horizontalHeader().font()
+        header_font.setPixelSize(max(12, self.current_font_size - 1))
+        header_font.setBold(True)
+        self.table.horizontalHeader().setFont(header_font)
+
+        row_height = self.current_font_size + 24
+        self.table.verticalHeader().setDefaultSectionSize(row_height)
+        self.table.horizontalHeader().setMinimumHeight(row_height + 4)
+
+        self.zoom_label.setText(f"{self.current_font_size}px")
+
+    def zoom_in(self):
+        if self.current_font_size < 32:
+            self.current_font_size += 2
+            self._apply_font_size()
+
+    def zoom_out(self):
+        if self.current_font_size > 10:
+            self.current_font_size -= 2
+            self._apply_font_size()
+
+    def reset_zoom(self):
+        self.current_font_size = self.base_font_size
+        self._apply_font_size()
+
+    def wheelEvent(self, event: QWheelEvent):
+        if event.angleDelta().y() > 0:
+            self.zoom_in()
+        else:
+            self.zoom_out()
+

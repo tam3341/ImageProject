@@ -6,7 +6,7 @@ from PySide6.QtCore import Qt, QSize, QPoint
 from PySide6.QtGui import QAction, QColor, QPixmap, QImage
 from imageProcessor import imageProcessor
 from recipes import MealDBAPI
-from ui_components import ImageStageCard, InfoCard, TitleBar
+from ui_components import ImageStageCard, InfoCard, TitleBar, ZoomTableDialog
 from styles import MODERN_STYLE
 
 from PySide6.QtWidgets import (
@@ -240,19 +240,53 @@ class SmartPantryWindow(QMainWindow):
         self.features_table = QTableWidget(0, 3)
         self.features_table.setHorizontalHeaderLabels(["Item", "Confidence", "Count"])
         self.features_table.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
+        self.features_table.horizontalHeader().setMinimumHeight(38)
         self.features_table.verticalHeader().setVisible(False)
+        self.features_table.setAlternatingRowColors(True)
+        self.features_table.setShowGrid(True)
+        self.features_table.setEditTriggers(QTableWidget.NoEditTriggers)
+        self.features_table.setSelectionBehavior(QTableWidget.SelectRows)
+        self.features_table.setFocusPolicy(Qt.ClickFocus)
+        self.features_table.verticalHeader().setDefaultSectionSize(36)
+        self.features_table.setMinimumHeight(180)
         self.features_card.body_layout.addWidget(self.features_table)
+
+        expand_features_btn = QPushButton("⤢  Expand Table")
+        expand_features_btn.setObjectName("ghostButton")
+        expand_features_btn.setCursor(Qt.PointingHandCursor)
+        expand_features_btn.setMaximumWidth(160)
+        expand_features_btn.clicked.connect(lambda: self._open_table_zoom(self.features_table, "Detected Items"))
+        self.features_card.body_layout.addWidget(expand_features_btn)
         layout.addWidget(self.features_card)
 
         self.decision_card = InfoCard("Decision Layer")
         self.recipe_table = QTableWidget(0, 3)
         self.recipe_table.setHorizontalHeaderLabels(["Recipe", "Match %", "Missing"])
         self.recipe_table.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
+        self.recipe_table.horizontalHeader().setMinimumHeight(38)
         self.recipe_table.verticalHeader().setVisible(False)
+        self.recipe_table.setAlternatingRowColors(True)
+        self.recipe_table.setShowGrid(True)
+        self.recipe_table.setEditTriggers(QTableWidget.NoEditTriggers)
+        self.recipe_table.setSelectionBehavior(QTableWidget.SelectRows)
+        self.recipe_table.setFocusPolicy(Qt.ClickFocus)
+        self.recipe_table.verticalHeader().setDefaultSectionSize(36)
+        self.recipe_table.setMinimumHeight(180)
         self.decision_card.body_layout.addWidget(self.recipe_table)
+
+        expand_recipe_btn = QPushButton("⤢  Expand Table")
+        expand_recipe_btn.setObjectName("ghostButton")
+        expand_recipe_btn.setCursor(Qt.PointingHandCursor)
+        expand_recipe_btn.setMaximumWidth(160)
+        expand_recipe_btn.clicked.connect(lambda: self._open_table_zoom(self.recipe_table, "Recipe Recommendations"))
+        self.decision_card.body_layout.addWidget(expand_recipe_btn)
         layout.addWidget(self.decision_card)
 
         return container
+
+    def _open_table_zoom(self, table, title):
+        dialog = ZoomTableDialog(table, title, self)
+        dialog.exec()
 
     def _apply_styles(self):
         self.setStyleSheet(MODERN_STYLE)
@@ -368,6 +402,7 @@ class SmartPantryWindow(QMainWindow):
 
         self.processing_log.setPlainText(
             "Preprocessing complete.\n"
+            "- Applied Median Blur\n"
             "- Applied Gaussian Blur\n"
             "- Applied CLAHE (Local Contrast)\n"
             "- Applied Unsharp Masking (Edge Enhancement)"

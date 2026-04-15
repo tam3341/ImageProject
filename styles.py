@@ -151,14 +151,39 @@ QToolButton#closeButton:hover {
     color: white;
 }
 
-QTextEdit, QListWidget, QTableWidget {
+QTextEdit, QListWidget {
     background: rgba(16, 36, 48, 0.78);
     border: 1px solid rgba(140, 235, 220, 0.08);
     border-radius: 16px;
     color: #eefcfc;
     padding: 8px;
     selection-background-color: rgba(40, 200, 170, 0.25);
-    gridline-color: rgba(140, 235, 220, 0.06);
+}
+
+QTableWidget {
+    background: rgba(12, 30, 42, 0.92);
+    alternate-background-color: rgba(20, 45, 60, 0.88);
+    border: 1px solid rgba(140, 235, 220, 0.12);
+    border-radius: 14px;
+    color: #eefcfc;
+    padding: 4px;
+    selection-background-color: rgba(40, 200, 170, 0.30);
+    gridline-color: rgba(140, 235, 220, 0.12);
+    outline: 0;
+}
+
+QTableWidget::item {
+    padding: 6px 10px;
+    border-bottom: 1px solid rgba(140, 235, 220, 0.08);
+}
+
+QTableWidget::item:selected {
+    background: rgba(26, 160, 183, 0.30);
+    color: #ffffff;
+}
+
+QTableWidget::item:hover {
+    background: rgba(40, 120, 150, 0.22);
 }
 
 QListWidget::item {
@@ -172,12 +197,72 @@ QListWidget::item:selected {
     color: #f5ffff;
 }
 
+QHeaderView {
+    background: transparent;
+}
+
 QHeaderView::section {
-    background: rgba(15, 40, 52, 0.92);
-    color: #dbffff;
+    background: rgba(10, 32, 46, 0.96);
+    color: #8cecdc;
     border: none;
-    padding: 8px;
-    font-weight: 600;
+    border-bottom: 2px solid rgba(140, 235, 220, 0.22);
+    border-right: 1px solid rgba(140, 235, 220, 0.06);
+    padding: 10px 12px;
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+QHeaderView::section:last {
+    border-right: none;
+}
+
+QTableCornerButton::section {
+    background: rgba(10, 32, 46, 0.96);
+    border: none;
+}
+
+QScrollBar:vertical {
+    background: rgba(14, 30, 40, 0.5);
+    width: 8px;
+    border-radius: 4px;
+    margin: 2px;
+}
+
+QScrollBar::handle:vertical {
+    background: rgba(140, 235, 220, 0.18);
+    border-radius: 4px;
+    min-height: 28px;
+}
+
+QScrollBar::handle:vertical:hover {
+    background: rgba(140, 235, 220, 0.32);
+}
+
+QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {
+    height: 0px;
+}
+
+QScrollBar:horizontal {
+    background: rgba(14, 30, 40, 0.5);
+    height: 8px;
+    border-radius: 4px;
+    margin: 2px;
+}
+
+QScrollBar::handle:horizontal {
+    background: rgba(140, 235, 220, 0.18);
+    border-radius: 4px;
+    min-width: 28px;
+}
+
+QScrollBar::handle:horizontal:hover {
+    background: rgba(140, 235, 220, 0.32);
+}
+
+QScrollBar::add-line:horizontal, QScrollBar::sub-line:horizontal {
+    width: 0px;
 }
 
 QProgressBar {
