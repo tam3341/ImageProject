@@ -356,12 +356,14 @@ class SmartPantryWindow(QMainWindow):
             self.statusBar().showMessage("Failed to load image for processing.")
             return
 
-        blur = imageProcessor.apply_gaussian_blur(img)
-        enhanced_bgr = imageProcessor.apply_clahe(blur)
-        final_img = imageProcessor.apply_unsharp_masking(enhanced_bgr)
-        self.processed_img_cv = final_img
+        # denoised = imageProcessor.apply_median_blur(img)
+        # blur = imageProcessor.apply_gaussian_blur(denoised)
+        # enhanced_bgr = imageProcessor.apply_clahe(blur)
+        # final_img = imageProcessor.apply_unsharp_masking(enhanced_bgr)
+        final = imageProcessor.enhance_image_pipeline(img)
+        self.processed_img_cv = final
 
-        final_pixmap = self.cv2_to_qpixmap(final_img)
+        final_pixmap = self.cv2_to_qpixmap(final)
         self.processed_card.set_pixmap(final_pixmap)
 
         self.processing_log.setPlainText(
