@@ -394,19 +394,13 @@ class SmartPantryWindow(QMainWindow):
         # blur = imageProcessor.apply_gaussian_blur(denoised)
         # enhanced_bgr = imageProcessor.apply_clahe(blur)
         # final_img = imageProcessor.apply_unsharp_masking(enhanced_bgr)
-        final = imageProcessor.enhance_image_pipeline(img)
+        final, logs = imageProcessor.enhance_image_pipeline(img)
         self.processed_img_cv = final
 
         final_pixmap = self.cv2_to_qpixmap(final)
         self.processed_card.set_pixmap(final_pixmap)
 
-        self.processing_log.setPlainText(
-            "Preprocessing complete.\n"
-            "- Applied Median Blur\n"
-            "- Applied Gaussian Blur\n"
-            "- Applied CLAHE (Local Contrast)\n"
-            "- Applied Unsharp Masking (Edge Enhancement)"
-        )
+        self.processing_log.setPlainText("\n".join(logs))
         self.progress.setValue(33)
         self.stage_list.setCurrentRow(2)
         self.statusBar().showMessage("Preprocessing complete.")
@@ -416,7 +410,7 @@ class SmartPantryWindow(QMainWindow):
             self.statusBar().showMessage("Please run preprocessing first.")
             return
 
-        plotted_img, items = imageProcessor.detect_ingrediants(self.processed_img_cv, 'best.pt')
+        plotted_img, items = imageProcessor.detect_ingredients(self.processed_img_cv, 'best.pt')
         
         final_pixmap = self.cv2_to_qpixmap(plotted_img)
         self.analysis_card.set_pixmap(final_pixmap)
