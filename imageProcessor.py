@@ -90,7 +90,7 @@ class imageProcessor:
     @staticmethod
     def detect_ingredients(img, model_weights='best.pt'):
         inference_model = YOLO(model_weights)
-        results = inference_model.predict(img, conf=0.25)[0]
+        results = inference_model.predict(img, conf=0.1)[0]
 
         plotted_img = results.plot()
 
